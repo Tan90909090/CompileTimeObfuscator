@@ -22,7 +22,9 @@ public partial class ObfuscatedContentGenerator : IIncrementalGenerator
     internal const string ObfuscatedStringAttributionClassName = "ObfuscatedStringAttribute";
     internal const string FullyQualifiedObfuscatedStringAttributeClassName = $"{NameSpaceName}.{ObfuscatedStringAttributionClassName}";
     internal const string ObfuscatedBytesAttributionClassName = "ObfuscatedBytesAttribute";
-    internal const string FullyQualifiedObfuscatedBytesAttributeClassName = $"{NameSpaceName}.{ObfuscatedStringAttributionClassName}";
+    internal const string FullyQualifiedObfuscatedBytesAttributeClassName = $"{NameSpaceName}.{ObfuscatedBytesAttributionClassName}";
+    internal const string ClearableBufferClassName = "ClearableBuffer";
+    internal const string FullyQualifiedClearableBufferClassName =$"{NameSpaceName}.{ClearableBufferClassName}";
 
     public void Initialize(IncrementalGeneratorInitializationContext initializationContext)
     {
@@ -113,10 +115,20 @@ public partial class ObfuscatedContentGenerator : IIncrementalGenerator
             initializationContext.RegisterSourceOutput(source, emitter);
         }
         RegisterAttributeAndEmitAction(FullyQualifiedObfuscatedStringAttributeClassName, EmitCodeForObuscatedString);
+        RegisterAttributeAndEmitAction(FullyQualifiedObfuscatedBytesAttributeClassName, EmitCodeForObuscatedBytes);
 
     }
 
     private static void EmitCodeForObuscatedString(SourceProductionContext context, GeneratorAttributeSyntaxContext source)
+    {
+        EmitCodeCore(context, source, FullyQualifiedObfuscatedStringAttributeClassName, true);
+    }
+    private static void EmitCodeForObuscatedBytes(SourceProductionContext context, GeneratorAttributeSyntaxContext source)
+    {
+        EmitCodeCore(context, source, FullyQualifiedObfuscatedBytesAttributeClassName, false);
+    }
+
+    private static void EmitCodeCore(SourceProductionContext context, GeneratorAttributeSyntaxContext source, string fullyQualifiedAttributeName, bool convertToString)
     {
         var methodSymbol = (IMethodSymbol)source.TargetSymbol;
         var methodDeclarationSyntax = (MethodDeclarationSyntax)source.TargetNode;
@@ -138,7 +150,17 @@ public partial class ObfuscatedContentGenerator : IIncrementalGenerator
         // I get a error "The target process exited with code -2146233082 (0x80131506) while evaluating the function '<LAST_USED_METHOD>'."
         // I don't know why, but I can avoid that by using MemoryPool.
         using var key = MemoryPool<byte>.Shared.Rent(16);
-        byte[] content = Encoding.UTF8.GetBytes(GetStringContentToObfuscateWithDiagnostics(methodSymbol));
+        byte[] content;
+        if (convertToString)
+        {
+            var typedConstant = GetAttributeConstructorArgumentToObfuscateWithDiagnostics(methodSymbol, fullyQualifiedAttributeName);
+            content = Encoding.UTF8.GetBytes((string)typedConstant.Value!);
+        }
+        else
+        {
+            var typedConstant = GetAttributeConstructorArgumentToObfuscateWithDiagnostics(methodSymbol, fullyQualifiedAttributeName);
+            content = typedConstant.Values.Select(x => (byte)x.Value!).ToArray();
+        }
         XorEncryptor.GenerateKeyAndEncryptContent(content, key.Memory.Span);
 
         string methodName = methodSymbol.ToDisplayString();
@@ -148,15 +170,13 @@ public partial class ObfuscatedContentGenerator : IIncrementalGenerator
         {{(methodSymbol.ContainingNamespace.IsGlobalNamespace ? string.Empty : $"{Environment.NewLine}namespace {methodSymbol.ContainingNamespace};")}}
         partial class {{methodSymbol.ContainingType.Name}}
         {
-            {{SyntaxFacts.GetText(methodSymbol.DeclaredAccessibility)}}{{(methodSymbol.IsStatic ? " static" : string.Empty)}} partial {{methodSymbol.ReturnType.Name}} {{methodSymbol.Name}}()
+            {{SyntaxFacts.GetText(methodSymbol.DeclaredAccessibility)}}{{(methodSymbol.IsStatic ? " static" : string.Empty)}} partial {{methodSymbol.ReturnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}} {{methodSymbol.Name}}()
             {
-        {{XorEncryptor.GenerateDecryptionCode(content, key.Memory.Span, true)}}
+        {{XorEncryptor.GenerateDecryptionCode(content, key.Memory.Span, convertToString)}}
             }
         }
 
         """;
-
-        //builder.AppendLine(AesEncryptor.GenerateDecryptionCode(encryptedContent, key, iv));
 
         string generatingSourceFileName = Utils.SanitizeStringForFileName($"{(containingClassSymbol == null ? $"global_{methodName}" : $"{containingClassSymbol}.{methodName}")}.ObfuscatedStringGenerator.g.cs");
 
@@ -212,21 +232,16 @@ public partial class ObfuscatedContentGenerator : IIncrementalGenerator
     }
 
     /// <summary>Returns attribute constructor's argument.</summary>
-    private static string GetStringContentToObfuscateWithDiagnostics(IMethodSymbol methodSymbol)
+    private static TypedConstant GetAttributeConstructorArgumentToObfuscateWithDiagnostics(IMethodSymbol methodSymbol, string fullyQualifiedAttributeName)
     {
         var attributeData = methodSymbol.GetAttributes().Single(
-            x => x.AttributeClass?.ToDisplayString() == FullyQualifiedObfuscatedStringAttributeClassName);
+            x => x.AttributeClass?.ToDisplayString() == fullyQualifiedAttributeName);
 
         if (attributeData.ConstructorArguments.Length != 1)
         {
             throw new InvalidOperationException($"ConstructorArguments.Length is {attributeData.ConstructorArguments.Length}");
         }
 
-        if (attributeData.ConstructorArguments[0].Value is not string str)
-        {
-            throw new InvalidOperationException($"ConstructorArguments[0].Value is not string.");
-        }
-
-        return str;
+        return attributeData.ConstructorArguments[0];
     }
 }
