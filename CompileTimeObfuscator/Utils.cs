@@ -21,7 +21,6 @@ internal static class Utils
 
     internal static string ToByteArrayLiteralPresentation(ReadOnlySpan<byte> bytes)
     {
-        // compiler optimize a code if `new byte[]{...}` is assigned to ReadOnlySpan<byte>. https://github.com/dotnet/roslyn/pull/24621
         string prefix = "new byte[]{";
         string suffix = "}";
         var builder = new StringBuilder(capacity: bytes.Length * 4 + prefix.Length + suffix.Length);

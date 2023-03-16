@@ -8,6 +8,8 @@ namespace CompileTimeObfuscator;
 // I don't know why but I can avoid that using MemoryPool<T>.
 internal static class XorObfuscator
 {
+    private const string CommentAboutReadOnlySpanOptimization = "// The compiler optimize a code if `new byte[]{...}` is assigned to ReadOnlySpan<byte>. https://github.com/dotnet/roslyn/pull/24621";
+
     internal static string GenerateCodeForDeobfuscateString(ReadOnlySpan<char> content, int keyLength, bool clearBufferWhenDisposing, bool convertToString)
     {
         if (keyLength <= 0) { throw new ArgumentOutOfRangeException(nameof(keyLength)); }
@@ -30,6 +32,7 @@ internal static class XorObfuscator
         }
 
         string code = $$"""
+                {{CommentAboutReadOnlySpanOptimization}}
                 System.ReadOnlySpan<byte> obfuscatedValue = {{Utils.ToByteArrayLiteralPresentation(obfuscatedSpan)}};
                 System.ReadOnlySpan<byte> key = {{Utils.ToByteArrayLiteralPresentation(keySpan)}};
                 {{(convertToString ? "using " : string.Empty)}}var buffer = new {{ObfuscatedContentGenerator.FullyQualifiedClearableBufferClassName}}<char>(obfuscatedValue.Length / 2, {{Utils.ToLiteralPresentation(clearBufferWhenDisposing)}});
@@ -66,6 +69,7 @@ internal static class XorObfuscator
         }
 
         string code = $$"""
+                {{CommentAboutReadOnlySpanOptimization}}
                 System.ReadOnlySpan<byte> obfuscatedValue = {{Utils.ToByteArrayLiteralPresentation(obfuscatedSpan)}};
                 System.ReadOnlySpan<byte> key = {{Utils.ToByteArrayLiteralPresentation(keySpan)}};
                 {{(convertToArray ? "using " : string.Empty)}}var buffer = new {{ObfuscatedContentGenerator.FullyQualifiedClearableBufferClassName}}<byte>(obfuscatedValue.Length, {{Utils.ToLiteralPresentation(clearBufferWhenDisposing)}});
