@@ -16,7 +16,9 @@ internal static class Utils
             .Replace(">", "_");
     }
 
-    internal static string ConvertToByteArrayLiteralPresentation(ReadOnlySpan<byte> bytes)
+    internal static string ToLiteralPresentation(bool value) => value ? "true" : "false";
+
+    internal static string ToByteArrayLiteralPresentation(ReadOnlySpan<byte> bytes)
     {
         // If `new byte[]{...}` is assigned to ReadOnlySpan<byte> then the compiler optimize that. https://github.com/dotnet/roslyn/pull/24621
         string prefix = "new byte[]{";
