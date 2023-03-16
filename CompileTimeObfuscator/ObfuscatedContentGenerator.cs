@@ -13,6 +13,7 @@ internal enum ObfuscationType
     None, // when error
     String,
     IMemoryOwnerChar,
+    ByteArray,
     IMemoryOwnerByte,
 }
 
@@ -135,7 +136,7 @@ public partial class ObfuscatedContentGenerator : IIncrementalGenerator
             context,
             source,
             FullyQualifiedObfuscatedBytesAttributeClassName,
-            ImmutableArray.Create(ObfuscationType.IMemoryOwnerByte),
+            ImmutableArray.Create(ObfuscationType.ByteArray, ObfuscationType.IMemoryOwnerByte),
             DiagnosticDescriptors.InvalidReturnTypeForObfuscatedBytes);
     }
 
@@ -198,7 +199,8 @@ public partial class ObfuscatedContentGenerator : IIncrementalGenerator
             {
                 ObfuscationType.String => XorEncryptor.GenerateDecryptionCodeForString(encryptedSpan, keySpan, true),
                 ObfuscationType.IMemoryOwnerChar => XorEncryptor.GenerateDecryptionCodeForString(encryptedSpan, keySpan, false),
-                ObfuscationType.IMemoryOwnerByte => XorEncryptor.GenerateDecryptionCodeForBytes(encryptedSpan, keySpan),
+                ObfuscationType.ByteArray => XorEncryptor.GenerateDecryptionCodeForBytes(encryptedSpan, keySpan, true),
+                ObfuscationType.IMemoryOwnerByte => XorEncryptor.GenerateDecryptionCodeForBytes(encryptedSpan, keySpan, false),
                 _ => throw new InvalidOperationException(),
             };
 
@@ -216,7 +218,7 @@ public partial class ObfuscatedContentGenerator : IIncrementalGenerator
 
             """;
 
-            string generatingSourceFileName = Utils.SanitizeStringForFileName($"{(containingClassSymbol == null ? "__global__" : string.Empty)}.{methodSymbol.Name}.{methodReturnType}.CompileTimeObfuscator.g.cs");
+            string generatingSourceFileName = Utils.SanitizeForFileName($"{(containingClassSymbol == null ? "__global__" : string.Empty)}.{methodSymbol.Name}.{methodReturnType}.CompileTimeObfuscator.g.cs");
 
             context.AddSource(generatingSourceFileName, code);
         }
@@ -237,24 +239,15 @@ public partial class ObfuscatedContentGenerator : IIncrementalGenerator
         var typeString = semanticModel.Compilation.GetTypeByMetadataName("System.String")!;
         var typeIMemoryOwnderByte = typeIMemoryOwnderOpened.Construct(typeByte);
         var typeIMemoryOwnderChar = typeIMemoryOwnderOpened.Construct(typeChar);
+        var typeByteArray = semanticModel.Compilation.CreateArrayTypeSymbol(typeByte);
 
-        ObfuscationType obfuscationType;
-        if (SymbolEqualityComparer.Default.Equals(methodSymbol.ReturnType, typeString))
-        {
-            obfuscationType = ObfuscationType.String;
-        }
-        else if (SymbolEqualityComparer.Default.Equals(methodSymbol.ReturnType, typeIMemoryOwnderChar))
-        {
-            obfuscationType = ObfuscationType.IMemoryOwnerChar;
-        }
-        else if (SymbolEqualityComparer.Default.Equals(methodSymbol.ReturnType, typeIMemoryOwnderByte))
-        {
-            obfuscationType = ObfuscationType.IMemoryOwnerByte;
-        }
-        else
-        {
-            obfuscationType = ObfuscationType.None;
-        }
+        bool HasReturnType(ISymbol symbol) => SymbolEqualityComparer.Default.Equals(methodSymbol.ReturnType, symbol);
+
+        var obfuscationType = HasReturnType(typeString) ? ObfuscationType.String :
+            HasReturnType(typeIMemoryOwnderChar) ? ObfuscationType.IMemoryOwnerChar :
+            HasReturnType(typeByteArray) ? ObfuscationType.ByteArray :
+            HasReturnType(typeIMemoryOwnderByte) ? ObfuscationType.IMemoryOwnerByte :
+            ObfuscationType.None;
 
         if (!validReturnTypes.Contains(obfuscationType))
         {

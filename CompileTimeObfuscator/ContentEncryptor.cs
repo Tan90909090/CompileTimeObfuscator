@@ -45,8 +45,8 @@ internal static class XorEncryptor
     internal static string GenerateDecryptionCodeForString(ReadOnlySpan<byte> encryptedContent, ReadOnlySpan<byte> key, bool convertToString)
     {
         string code = $$"""
-        System.ReadOnlySpan<byte> encryptedContent = {{Utils.ConvertToSpanPresentation(encryptedContent)}};
-        System.ReadOnlySpan<byte> key = {{Utils.ConvertToSpanPresentation(key)}};
+        System.ReadOnlySpan<byte> encryptedContent = {{Utils.ConvertToByteArrayLiteralPresentation(encryptedContent)}};
+        System.ReadOnlySpan<byte> key = {{Utils.ConvertToByteArrayLiteralPresentation(key)}};
         {{(convertToString ? "using " : string.Empty)}}var buffer = new {{ObfuscatedContentGenerator.FullyQualifiedClearableBufferClassName}}<char>(encryptedContent.Length / 2);
         var span = buffer.Memory.Span;
         for (int i = span.Length - 1; i >= 0; i--)
@@ -60,18 +60,18 @@ internal static class XorEncryptor
         return code;
     }
 
-    internal static string GenerateDecryptionCodeForBytes(ReadOnlySpan<byte> encryptedContent, ReadOnlySpan<byte> key)
+    internal static string GenerateDecryptionCodeForBytes(ReadOnlySpan<byte> encryptedContent, ReadOnlySpan<byte> key, bool convertToArray)
     {
         string code = $$"""
-        System.ReadOnlySpan<byte> encryptedContent = {{Utils.ConvertToSpanPresentation(encryptedContent)}};
-        System.ReadOnlySpan<byte> key = {{Utils.ConvertToSpanPresentation(key)}};
-        var buffer = new {{ObfuscatedContentGenerator.FullyQualifiedClearableBufferClassName}}<byte>(encryptedContent.Length);
+        System.ReadOnlySpan<byte> encryptedContent = {{Utils.ConvertToByteArrayLiteralPresentation(encryptedContent)}};
+        System.ReadOnlySpan<byte> key = {{Utils.ConvertToByteArrayLiteralPresentation(key)}};
+        {{(convertToArray ? "using " : string.Empty)}}var buffer = new {{ObfuscatedContentGenerator.FullyQualifiedClearableBufferClassName}}<byte>(encryptedContent.Length);
         var span = buffer.Memory.Span;
         for (int i = span.Length - 1; i >= 0; i--)
         {
             span[i] = (byte)(encryptedContent[i] ^ key[i % key.Length]);
         }
-        return buffer;
+        return {{(convertToArray ? "buffer.Memory.ToArray()" : "buffer")}};
         """;
         return code;
     }

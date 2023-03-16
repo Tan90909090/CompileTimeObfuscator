@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Text;
 using System.Threading;
 
@@ -9,7 +8,7 @@ internal static class Utils
     // I don't know it is guaranteed that generator is executed in a single thread or not.
     internal static ThreadLocal<Random> ThreadLocalRandom = new(() => new Random());
 
-    internal static string SanitizeStringForFileName(string str)
+    internal static string SanitizeForFileName(string str)
     {
         return str
             .Replace("global::", "")
@@ -17,14 +16,10 @@ internal static class Utils
             .Replace(">", "_");
     }
 
-    internal static string ConvertToByteArrayLiteralPresentation(byte[] bytes)
+    internal static string ConvertToByteArrayLiteralPresentation(ReadOnlySpan<byte> bytes)
     {
-        return $$"""new byte[]{{{string.Join(",", bytes.Select(b => $"0x{b:X02}"))}}}""";
-    }
-
-    internal static string ConvertToSpanPresentation(ReadOnlySpan<byte> bytes)
-    {
-        string prefix = "stackalloc byte[]{";
+        // If `new byte[]{...}` is assigned to ReadOnlySpan<byte> then the compiler optimize that. https://github.com/dotnet/roslyn/pull/24621
+        string prefix = "new byte[]{";
         string suffix = "}";
         var builder = new StringBuilder(capacity: bytes.Length * 4 + prefix.Length + suffix.Length);
         builder.Append(prefix);

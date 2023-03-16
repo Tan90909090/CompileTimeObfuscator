@@ -15,8 +15,8 @@ internal static class DiagnosticDescriptors
 
     public static readonly DiagnosticDescriptor InvalidReturnTypeForObfuscatedBytes = new(
         id: "OSG0002",
-        title: "Return type must be IMemoryOwner<byte>",
-        messageFormat: "The target method's return type is not System.Buffers.IMemoryOwner<byte>. The return type must be it.",
+        title: "Return type must be byte[] or IMemoryOwner<byte>",
+        messageFormat: "The target method's return type is not byte[] nor System.Buffers.IMemoryOwner<byte>. The return type must be one of them.",
         category: Category,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
