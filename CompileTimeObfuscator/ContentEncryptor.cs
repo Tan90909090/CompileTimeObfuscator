@@ -4,17 +4,17 @@ using System.Buffers;
 namespace CompileTimeObfuscator;
 
 // If I write a code using stackalloc expression such as `ReadOnlySpan<byte> a = stackalloc byte[32]`
-// then process will crash wth message "The target process exited with code -2146233082 (0x80131506) while evaluating the function '<LAST_METHOD_NAME>'."
+// then process will crash with a message "The target process exited with code -2146233082 (0x80131506) while evaluating the function '<LAST_CALLED_METHOD_NAME>'."
 // I don't know why but I can avoid that using MemoryPool<T>.
 internal static class XorObfuscator
 {
-    internal static string GenerateCodeForDeobfuscateString(ReadOnlySpan<char> content, int keySize, bool clearBufferWhenDisposing, bool convertToString)
+    internal static string GenerateCodeForDeobfuscateString(ReadOnlySpan<char> content, int keyLength, bool clearBufferWhenDisposing, bool convertToString)
     {
-        if (keySize <= 0) { throw new ArgumentOutOfRangeException(nameof(keySize)); }
+        if (keyLength <= 0) { throw new ArgumentOutOfRangeException(nameof(keyLength)); }
 
         var random = Utils.ThreadLocalRandom.Value;
-        using var keyBuffer = MemoryPool<byte>.Shared.Rent(keySize);
-        var keySpan = keyBuffer.Memory.Span.Slice(0, keySize);
+        using var keyBuffer = MemoryPool<byte>.Shared.Rent(keyLength);
+        var keySpan = keyBuffer.Memory.Span.Slice(0, keyLength);
         using var obfuscatedBuffer = MemoryPool<byte>.Shared.Rent(content.Length * 2);
         var obfuscatedSpan = obfuscatedBuffer.Memory.Span.Slice(0, content.Length * 2);
 
@@ -30,28 +30,28 @@ internal static class XorObfuscator
         }
 
         string code = $$"""
-        System.ReadOnlySpan<byte> encryptedContent = {{Utils.ToByteArrayLiteralPresentation(obfuscatedSpan)}};
-        System.ReadOnlySpan<byte> key = {{Utils.ToByteArrayLiteralPresentation(keySpan)}};
-        {{(convertToString ? "using " : string.Empty)}}var buffer = new {{ObfuscatedContentGenerator.FullyQualifiedClearableBufferClassName}}<char>(encryptedContent.Length / 2, {{Utils.ToLiteralPresentation(clearBufferWhenDisposing)}});
-        var span = buffer.Memory.Span;
-        for (int i = span.Length - 1; i >= 0; i--)
-        {
-            byte upper = (byte)(encryptedContent[2 * i + 1] ^ key[(2 * i + 1) % key.Length]);
-            byte lower = (byte)(encryptedContent[2 * i + 0] ^ key[(2 * i + 0) % key.Length]);
-            span[i] = (char)(upper << 8 | lower);
-        }
-        return {{(convertToString ? "new string(buffer.Memory.Span)" : "buffer")}};
+                System.ReadOnlySpan<byte> obfuscatedValue = {{Utils.ToByteArrayLiteralPresentation(obfuscatedSpan)}};
+                System.ReadOnlySpan<byte> key = {{Utils.ToByteArrayLiteralPresentation(keySpan)}};
+                {{(convertToString ? "using " : string.Empty)}}var buffer = new {{ObfuscatedContentGenerator.FullyQualifiedClearableBufferClassName}}<char>(obfuscatedValue.Length / 2, {{Utils.ToLiteralPresentation(clearBufferWhenDisposing)}});
+                var span = buffer.Memory.Span;
+                for (int i = span.Length - 1; i >= 0; i--)
+                {
+                    byte upper = (byte)(obfuscatedValue[2 * i + 1] ^ key[(2 * i + 1) % key.Length]);
+                    byte lower = (byte)(obfuscatedValue[2 * i + 0] ^ key[(2 * i + 0) % key.Length]);
+                    span[i] = (char)(upper << 8 | lower);
+                }
+                return {{(convertToString ? "new string(buffer.Memory.Span)" : "buffer")}};
         """;
         return code;
     }
 
-    internal static string GenerateCodeForDeobfuscateBytes(ReadOnlySpan<byte> content, int keySize, bool clearBufferWhenDisposing, bool convertToArray)
+    internal static string GenerateCodeForDeobfuscateBytes(ReadOnlySpan<byte> content, int keyLength, bool clearBufferWhenDisposing, bool convertToArray)
     {
-        if (keySize <= 0) { throw new ArgumentOutOfRangeException(nameof(keySize)); }
+        if (keyLength <= 0) { throw new ArgumentOutOfRangeException(nameof(keyLength)); }
 
         var random = Utils.ThreadLocalRandom.Value;
-        using var keyBuffer = MemoryPool<byte>.Shared.Rent(keySize);
-        var keySpan = keyBuffer.Memory.Span.Slice(0, keySize);
+        using var keyBuffer = MemoryPool<byte>.Shared.Rent(keyLength);
+        var keySpan = keyBuffer.Memory.Span.Slice(0, keyLength);
         using var obfuscatedBuffer = MemoryPool<byte>.Shared.Rent(content.Length);
         var obfuscatedSpan = obfuscatedBuffer.Memory.Span.Slice(0, content.Length);
 
@@ -66,15 +66,15 @@ internal static class XorObfuscator
         }
 
         string code = $$"""
-        System.ReadOnlySpan<byte> encryptedContent = {{Utils.ToByteArrayLiteralPresentation(obfuscatedSpan)}};
-        System.ReadOnlySpan<byte> key = {{Utils.ToByteArrayLiteralPresentation(keySpan)}};
-        {{(convertToArray ? "using " : string.Empty)}}var buffer = new {{ObfuscatedContentGenerator.FullyQualifiedClearableBufferClassName}}<byte>(encryptedContent.Length, {{Utils.ToLiteralPresentation(clearBufferWhenDisposing)}});
-        var span = buffer.Memory.Span;
-        for (int i = span.Length - 1; i >= 0; i--)
-        {
-            span[i] = (byte)(encryptedContent[i] ^ key[i % key.Length]);
-        }
-        return {{(convertToArray ? "buffer.Memory.ToArray()" : "buffer")}};
+                System.ReadOnlySpan<byte> obfuscatedValue = {{Utils.ToByteArrayLiteralPresentation(obfuscatedSpan)}};
+                System.ReadOnlySpan<byte> key = {{Utils.ToByteArrayLiteralPresentation(keySpan)}};
+                {{(convertToArray ? "using " : string.Empty)}}var buffer = new {{ObfuscatedContentGenerator.FullyQualifiedClearableBufferClassName}}<byte>(obfuscatedValue.Length, {{Utils.ToLiteralPresentation(clearBufferWhenDisposing)}});
+                var span = buffer.Memory.Span;
+                for (int i = span.Length - 1; i >= 0; i--)
+                {
+                    span[i] = (byte)(obfuscatedValue[i] ^ key[i % key.Length]);
+                }
+                return {{(convertToArray ? "buffer.Memory.ToArray()" : "buffer")}};
         """;
         return code;
     }

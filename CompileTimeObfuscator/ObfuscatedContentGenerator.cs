@@ -10,14 +10,14 @@ namespace CompileTimeObfuscator;
 
 internal enum ObfuscationType
 {
-    None, // when error
+    Error,
     String,
     IMemoryOwnerChar,
     ByteArray,
     IMemoryOwnerByte,
 }
 
-[Generator(LanguageNames.CSharp)]   // TODO: Code maid is bad now...
+[Generator(LanguageNames.CSharp)]
 public partial class ObfuscatedContentGenerator : IIncrementalGenerator
 {
     internal const string NameSpaceName = "CompileTimeObfuscator";
@@ -38,35 +38,34 @@ public partial class ObfuscatedContentGenerator : IIncrementalGenerator
 
         namespace {{NameSpaceName}};
 
-        /// <summary>Indicates to source generator that a target string must be obfuscated.</summary>
+        /// <summary>Obfuscate the specified string to preventing the specified string from appearing in a metadata. The obfuscated string is deobfuscated at runtime. The method must return <see cref="string"/> or <see cref="IMemoryOwner{T}"/> of type <see cref="char"/>.</summary>
         [Conditional("COMPILE_TIME_ONLY")]
         [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
         internal sealed class {{ObfuscatedStringAttributionClassName}}: Attribute
         {
-            internal {{ObfuscatedStringAttributionClassName}}(string content, int keySize = 16, bool clearBufferWhenDisposing = true)
-            {
-            }
-        }
-                
-        /// <summary>Indicates to source generator that a target bytes must be obfuscated.</summary>
-        [Conditional("COMPILE_TIME_ONLY")]
-        [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
-        internal sealed class {{ObfuscatedBytesAttributionClassName}}: Attribute
-        {
-            internal {{ObfuscatedBytesAttributionClassName}}(byte[] content, int keySize = 16, bool clearBufferWhenDisposing = true)
+            /// <summary>Initializes a new instance of the <see cref="{{ObfuscatedStringAttributionClassName}}"/> with the specified string.</summary>
+            /// <param name="value">The string to obfuscate.</param>
+            /// <param name="keyLength">A length of xor key.</param>
+            /// <param name="clearBufferWhenDisposing"><see langword="true" /> to clear a deobfuscated buffer after disposing the <see cref="IMemoryOwner{T}"/> object; otherwise, <see langword="false" />.</param>
+            internal {{ObfuscatedStringAttributionClassName}}(string value, int keyLength = 16, bool clearBufferWhenDisposing = true)
             {
             }
         }
 
-        /// <summary>
-        /// <para>
-        /// A buffer class implementing <see cref="IMemoryOwner{T}"/>. When it is called <see cref="Dispose"/> then clears internal buffer.
-        /// </para>
-        /// <para>
-        /// <see cref="Memory"/> property returns <see cref="Memory{T}"/> that length is originally required length.
-        /// This behavior is different from an <see cref="IMemoryOwner{T}"/> returned from <see cref="MemoryPool{T}.Shared"/>.
-        /// </para>
-        /// </summary>
+        /// <summary>Obfuscate the specified bytes to preventing the specified bytes from appearing in a metadata. The obfuscated bytes is deobfuscated at runtime. The method must return <see cref="byte"/>[] or <see cref="IMemoryOwner{T}"/> of type <see cref="byte"/>.</summary>
+        [Conditional("COMPILE_TIME_ONLY")]
+        [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+        internal sealed class {{ObfuscatedBytesAttributionClassName}}: Attribute
+        {
+            /// <summary>Initializes a new instance of the <see cref="{{ObfuscatedBytesAttributionClassName}}"/> with the specified bytes.</summary>
+            /// <param name="value">The bytes to obfuscate.</param>
+            /// <param name="keyLength">A length of xor key.</param>
+            /// <param name="clearBufferWhenDisposing"><see langword="true" /> to clear a deobfuscated buffer after disposing the <see cref="IMemoryOwner{T}"/> object; otherwise, <see langword="false" />.</param>
+            internal {{ObfuscatedBytesAttributionClassName}}(byte[] value, int keyLength = 16, bool clearBufferWhenDisposing = true)
+            {
+            }
+        }
+
         internal sealed class ClearableBuffer<T> : IMemoryOwner<T>
         {
             private T[] _array;
@@ -87,7 +86,8 @@ public partial class ObfuscatedContentGenerator : IIncrementalGenerator
                 ArrayPool<T>.Shared.Return(_array, _clearBufferWhenDisposing);
                 _array = null;
             }
-
+        
+            /// <summary>Returns <see cref="Memory{T}"/> that length is originally required length. This behavior is different from an <see cref="IMemoryOwner{T}"/> returned from <see cref="MemoryPool{T}.Shared"/>.</summary>
             public Memory<T> Memory
             {
                 get
@@ -106,46 +106,52 @@ public partial class ObfuscatedContentGenerator : IIncrementalGenerator
     {
         initializationContext.RegisterPostInitializationOutput(static context =>
         {
-            context.AddSource("CompileTimeObfuscator.g.cs", CodeForPostInitializationOutput);
+            context.AddSource($"{NameSpaceName}.g.cs", CodeForPostInitializationOutput);
         });
 
-        void RegisterAttributeAndEmitAction(
+        void RegisterAttributeAndEmitter(
             string fullyQualifiedAttributeName,
-            Action<SourceProductionContext, GeneratorAttributeSyntaxContext> emitter)
+            ImmutableArray<ObfuscationType> validReturnTypes,
+            DiagnosticDescriptor diagnosticDescriptor)
         {
             var source = initializationContext.SyntaxProvider.ForAttributeWithMetadataName(
                 fullyQualifiedAttributeName,
                 static (syntaxNode, cancellationToken) => true,
                 static (syntaxContext, cancellationToken) => syntaxContext);
-            initializationContext.RegisterSourceOutput(source, emitter);
+            initializationContext.RegisterSourceOutput(
+                source,
+                (context, source) =>
+                {
+                    EmitCore(context,
+                        source,
+                        fullyQualifiedAttributeName,
+                        validReturnTypes,
+                        diagnosticDescriptor);
+                });
         }
-        RegisterAttributeAndEmitAction(FullyQualifiedObfuscatedStringAttributeClassName, EmitCodeForObfuscatedString);
-        RegisterAttributeAndEmitAction(FullyQualifiedObfuscatedBytesAttributeClassName, EmitCodeForObfuscatedBytes);
-    }
-
-    private static void EmitCodeForObfuscatedString(SourceProductionContext context, GeneratorAttributeSyntaxContext source)
-    {
-        EmitCodeCore(
-            context,
-            source,
+        RegisterAttributeAndEmitter(
             FullyQualifiedObfuscatedStringAttributeClassName,
             ImmutableArray.Create(ObfuscationType.String, ObfuscationType.IMemoryOwnerChar),
-            DiagnosticDescriptors.InvalidReturnTypeForObfuscatedString);
-    }
-    private static void EmitCodeForObfuscatedBytes(SourceProductionContext context, GeneratorAttributeSyntaxContext source)
-    {
-        EmitCodeCore(
-            context,
-            source,
+            DiagnosticDescriptors.InvalidObfuscatedStringAttribute);
+        RegisterAttributeAndEmitter(
             FullyQualifiedObfuscatedBytesAttributeClassName,
             ImmutableArray.Create(ObfuscationType.ByteArray, ObfuscationType.IMemoryOwnerByte),
-            DiagnosticDescriptors.InvalidReturnTypeForObfuscatedBytes);
+            DiagnosticDescriptors.InvalidObfuscatedBytesAttribute);
     }
 
-    private static void EmitCodeCore(SourceProductionContext context, GeneratorAttributeSyntaxContext source, string fullyQualifiedAttributeName, ImmutableArray<ObfuscationType> validReturnTypes, DiagnosticDescriptor diagnosticDescriptorWhenInvalidReturnType)
+    private static void EmitCore(
+        SourceProductionContext context,
+        GeneratorAttributeSyntaxContext source,
+        string fullyQualifiedAttributeName,
+        ImmutableArray<ObfuscationType> validReturnTypes,
+        DiagnosticDescriptor diagnosticDescriptor)
     {
         var methodSymbol = (IMethodSymbol)source.TargetSymbol;
         var methodDeclarationSyntax = (MethodDeclarationSyntax)source.TargetNode;
+
+        // ContainingType is null when the method is not contained with in type. I'm not sure this will happen when using C# language.
+        var containingClassSymbol = methodSymbol.ContainingType ??
+            throw new InvalidOperationException($"IMethodSymbol.ContainingType is null");
 
         var obfuscationType = GetObfuscationTypeWithDiagnostics(
             context,
@@ -153,65 +159,72 @@ public partial class ObfuscatedContentGenerator : IIncrementalGenerator
             methodDeclarationSyntax,
             source.SemanticModel,
             validReturnTypes,
-            diagnosticDescriptorWhenInvalidReturnType);
-        if (obfuscationType == ObfuscationType.None)
+            diagnosticDescriptor);
+        if (obfuscationType == ObfuscationType.Error)
         {
             return;
         }
 
-        var containingClassSymbol = methodSymbol.ContainingType;
-        if (containingClassSymbol == null)
+        if (GetAttributeConstructorArgumentWithDiagnostics(
+            context,
+            methodSymbol,
+            methodDeclarationSyntax,
+            fullyQualifiedAttributeName) is not AttributeConstructorArgument attributeArgument)
         {
-            return; // when the method is not contained with in type. I'm not sure this will happen when using C# language.
+            return;
         }
 
-        // If I use "Span<byte> key = stackalloc byte[16];" then
-        // I get a error "The target process exited with code -2146233082 (0x80131506) while evaluating the function '<LAST_USED_METHOD>'."
-        // I don't know why, but I can avoid that by using MemoryPool.
-        string decryptionCode;
+        string deobfuscationCode;
         if (fullyQualifiedAttributeName == FullyQualifiedObfuscatedStringAttributeClassName)
         {
-            var attributeArgument = GetAttributeConstructorArgument(methodSymbol, fullyQualifiedAttributeName);
             string str = (string)attributeArgument.TypedConstant.Value!;
-            decryptionCode = XorObfuscator.GenerateCodeForDeobfuscateString(str.AsSpan(), attributeArgument.KeySize, attributeArgument.ClearBufferWhenDisposing, obfuscationType == ObfuscationType.String);
+            deobfuscationCode = XorObfuscator.GenerateCodeForDeobfuscateString(
+                str.AsSpan(),
+                attributeArgument.KeyLength,
+                attributeArgument.ClearBufferWhenDisposing,
+                obfuscationType == ObfuscationType.String);
         }
         else if (fullyQualifiedAttributeName == FullyQualifiedObfuscatedBytesAttributeClassName)
         {
-            var attributeArgument = GetAttributeConstructorArgument(methodSymbol, fullyQualifiedAttributeName);
             byte[] bytes = attributeArgument.TypedConstant.Values.Select(x => (byte)x.Value!).ToArray();
-            decryptionCode = XorObfuscator.GenerateCodeForDeobfuscateBytes(bytes, attributeArgument.KeySize, attributeArgument.ClearBufferWhenDisposing, obfuscationType == ObfuscationType.ByteArray);
+            deobfuscationCode = XorObfuscator.GenerateCodeForDeobfuscateBytes(bytes,
+                attributeArgument.KeyLength,
+                attributeArgument.ClearBufferWhenDisposing,
+                obfuscationType == ObfuscationType.ByteArray);
         }
         else
         {
             throw new InvalidOperationException($"Unknown fullyQualifiedAttributeName: {fullyQualifiedAttributeName}");
         }
 
-        string code = $$"""
+        string generatedSourceCode = $$"""
             // <auto-generated/>
             {{(methodSymbol.ContainingNamespace.IsGlobalNamespace ? string.Empty : $"{Environment.NewLine}namespace {methodSymbol.ContainingNamespace};")}}
             partial class {{methodSymbol.ContainingType.Name}}
             {
                 {{SyntaxFacts.GetText(methodSymbol.DeclaredAccessibility)}}{{(methodSymbol.IsStatic ? " static" : string.Empty)}} partial {{methodSymbol.ReturnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}} {{methodSymbol.Name}}()
                 {
-            {{decryptionCode}}
+            {{deobfuscationCode}}
                 }
             }
 
             """;
 
-        string generatingSourceFileName = Utils.SanitizeForFileName($"{(containingClassSymbol == null ? "__global__" : containingClassSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))}.{methodSymbol.Name}.{methodSymbol.ReturnType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat)}.CompileTimeObfuscator.g.cs");
+        string classPart = containingClassSymbol?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) ?? "__global__";
+        string returnTypePart = methodSymbol.ReturnType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+        string generatingSourceFileName = Utils.SanitizeForFileName($"{classPart}.{methodSymbol.Name}.{returnTypePart}.CompileTimeObfuscator.g.cs");
 
-        context.AddSource(generatingSourceFileName, code);
+        context.AddSource(generatingSourceFileName, generatedSourceCode);
     }
 
-    /// <summary>Returns value if there is no syntax error. Returns <see cref="ObfuscationType.None"/> and report diagnostic otherwise.</summary>
+    /// <summary>Returns a return-type of the method if there is no signature errors. Returns <see cref="ObfuscationType.Error"/> and reports diagnostic otherwise.</summary>
     private static ObfuscationType GetObfuscationTypeWithDiagnostics(
         SourceProductionContext context,
         IMethodSymbol methodSymbol,
         MethodDeclarationSyntax methodDeclarationSyntax,
         SemanticModel semanticModel,
         ImmutableArray<ObfuscationType> validReturnTypes,
-        DiagnosticDescriptor diagnosticDescriptorWhenInvalidReturnType)
+        DiagnosticDescriptor diagnosticDescriptor)
     {
         INamedTypeSymbol GetTypeSymbolFromName(string fullyQualifiedmetadataName) =>
             semanticModel.Compilation.GetTypeByMetadataName(fullyQualifiedmetadataName) ??
@@ -231,38 +244,30 @@ public partial class ObfuscatedContentGenerator : IIncrementalGenerator
             HasReturnType(typeIMemoryOwnderChar) ? ObfuscationType.IMemoryOwnerChar :
             HasReturnType(typeByteArray) ? ObfuscationType.ByteArray :
             HasReturnType(typeIMemoryOwnderByte) ? ObfuscationType.IMemoryOwnerByte :
-            ObfuscationType.None;
+            ObfuscationType.Error;
 
-        if (!validReturnTypes.Contains(obfuscationType))
+        bool validSignature = validReturnTypes.Contains(obfuscationType) &&
+            methodSymbol.Parameters.Length == 0 &&
+            methodSymbol.Arity == 0 &&
+            methodSymbol.IsPartialDefinition &&
+            !methodSymbol.IsAbstract;
+        if (!validSignature)
         {
-            context.ReportDiagnostic(Diagnostic.Create(diagnosticDescriptorWhenInvalidReturnType, methodDeclarationSyntax.Identifier.GetLocation()));
-            return ObfuscationType.None;
-        }
-
-        if (methodSymbol.Parameters.Length > 0)
-        {
-            context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.MethodMustNotHaveParameters, methodDeclarationSyntax.Identifier.GetLocation()));
-            return ObfuscationType.None;
-        }
-
-        if (methodSymbol.Arity > 0)
-        {
-            context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.MethodMustNotHaveTypeParameters, methodDeclarationSyntax.Identifier.GetLocation()));
-            return ObfuscationType.None;
-        }
-
-        if (!methodSymbol.IsPartialDefinition)
-        {
-            context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.MethodMustBePartial, methodDeclarationSyntax.Identifier.GetLocation()));
-            return ObfuscationType.None;
+            context.ReportDiagnostic(Diagnostic.Create(diagnosticDescriptor, methodDeclarationSyntax.Identifier.GetLocation()));
+            return ObfuscationType.Error;
         }
 
         return obfuscationType;
     }
 
-    private record struct AttributeConstructorArgument(TypedConstant TypedConstant, int KeySize, bool ClearBufferWhenDisposing);
+    private record struct AttributeConstructorArgument(TypedConstant TypedConstant, int KeyLength, bool ClearBufferWhenDisposing);
 
-    private static AttributeConstructorArgument GetAttributeConstructorArgument(IMethodSymbol methodSymbol, string fullyQualifiedAttributeName)
+    /// <summary>Returns constructor parameters of the attribute if successfully. Returns null and reports diagnostic otherwise.</summary>
+    private static AttributeConstructorArgument? GetAttributeConstructorArgumentWithDiagnostics(
+        SourceProductionContext context,
+        IMethodSymbol methodSymbol,
+        MethodDeclarationSyntax methodDeclarationSyntax,
+        string fullyQualifiedAttributeName)
     {
         var attributeData = methodSymbol.GetAttributes().Single(
             x => x.AttributeClass?.ToDisplayString() == fullyQualifiedAttributeName);
@@ -272,8 +277,16 @@ public partial class ObfuscatedContentGenerator : IIncrementalGenerator
             throw new InvalidOperationException($"ConstructorArguments.Length is {attributeData.ConstructorArguments.Length}");
         }
 
+        var typedConstantForValue = attributeData.ConstructorArguments[0];
+        if (typedConstantForValue.IsNull)
+        {
+            context.ReportDiagnostic(
+                Diagnostic.Create(DiagnosticDescriptors.ValueParameterIsNull, methodDeclarationSyntax.Identifier.GetLocation()));
+            return null;
+        }
+
         return new AttributeConstructorArgument(
-            attributeData.ConstructorArguments[0],
+            typedConstantForValue,
             (int)attributeData.ConstructorArguments[1].Value!,
             (bool)attributeData.ConstructorArguments[2].Value!);
     }

@@ -3,9 +3,10 @@ using System.Text;
 using System.Threading;
 
 namespace CompileTimeObfuscator;
+
 internal static class Utils
 {
-    // I don't know it is guaranteed that generator is executed in a single thread or not.
+    // I don't know if it is guaranteed that generator is executed in a single thread or not.
     internal static ThreadLocal<Random> ThreadLocalRandom = new(() => new Random());
 
     internal static string SanitizeForFileName(string str)
@@ -20,7 +21,7 @@ internal static class Utils
 
     internal static string ToByteArrayLiteralPresentation(ReadOnlySpan<byte> bytes)
     {
-        // If `new byte[]{...}` is assigned to ReadOnlySpan<byte> then the compiler optimize that. https://github.com/dotnet/roslyn/pull/24621
+        // compiler optimize a code if `new byte[]{...}` is assigned to ReadOnlySpan<byte>. https://github.com/dotnet/roslyn/pull/24621
         string prefix = "new byte[]{";
         string suffix = "}";
         var builder = new StringBuilder(capacity: bytes.Length * 4 + prefix.Length + suffix.Length);
