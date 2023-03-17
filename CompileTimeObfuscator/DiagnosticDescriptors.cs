@@ -6,26 +6,34 @@ internal static class DiagnosticDescriptors
 {
     private const string Category = "ObfuscatedStringGenerator";
 
-    public static readonly DiagnosticDescriptor InvalidObfuscatedStringAttribute = new(
+    public static readonly DiagnosticDescriptor InvalidMethodSignatureForObfuscatedStringAttribute = new(
         id: "OSG0001",
-        title: $"Invalid {ObfuscatedContentGenerator.ObfuscatedStringAttributionClassName} usage",
-        messageFormat: $"{ObfuscatedContentGenerator.ObfuscatedStringAttributionClassName} method must be partial, parameterless, non-generic, non-abstract, and return string or System.Buffers.IMemoryOwner<char>.",
+        title: $"Invalid {ObfuscatedContentGenerator.ClassNameObfuscatedStringAttribution} usage",
+        messageFormat: $"{ObfuscatedContentGenerator.ClassNameObfuscatedStringAttribution} method must be partial, parameterless, non-generic, non-abstract, and return string or System.Buffers.IMemoryOwner<char>.",
         category: Category,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor InvalidObfuscatedBytesAttribute = new(
+    public static readonly DiagnosticDescriptor InvalidMethodSignatureForObfuscatedBytesAttribute = new(
         id: "OSG0002",
-        title: $"Invalid {ObfuscatedContentGenerator.ObfuscatedBytesAttributionClassName} usage",
-        messageFormat: $"{ObfuscatedContentGenerator.ObfuscatedBytesAttributionClassName} method must be partial, parameterless, non-generic, non-abstract, and return byte[] or System.Buffers.IMemoryOwner<byte>.",
+        title: $"Invalid {ObfuscatedContentGenerator.ClassNameObfuscatedBytesAttribution} usage",
+        messageFormat: $"{ObfuscatedContentGenerator.ClassNameObfuscatedBytesAttribution} method must be partial, parameterless, non-generic, non-abstract, and return byte[] or System.Buffers.IMemoryOwner<byte>.",
         category: Category,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor ValueParameterIsNull = new(
+    public static readonly DiagnosticDescriptor InvalidValueParameter = new(
         id: "OSG0003",
-        title: $"Value must not be null",
+        title: $"Invalid vlue parameter",
         messageFormat: $"The value parameter of the attribute must not be null.",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor InvalidKeyLengthParameter = new(
+        id: "OSG0004",
+        title: $"Invalid KeyLength parameter",
+        messageFormat: $"The KeySize parameter of the attribute must be greater than 0.",
         category: Category,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
