@@ -272,7 +272,7 @@ public partial class ObfuscatedContentGenerator : IIncrementalGenerator
             !methodSymbol.IsAbstract;
         if (!validSignature)
         {
-            context.ReportDiagnostic(Diagnostic.Create(diagnosticDescriptor, methodDeclarationSyntax.Identifier.GetLocation()));
+            context.ReportDiagnostic(Diagnostic.Create(diagnosticDescriptor, methodDeclarationSyntax.Identifier.GetLocation(), methodSymbol.Name));
             return null;
         }
 
@@ -300,7 +300,7 @@ public partial class ObfuscatedContentGenerator : IIncrementalGenerator
         if (typedConstantForValue.IsNull)
         {
             context.ReportDiagnostic(
-                Diagnostic.Create(DiagnosticDescriptors.InvalidValueParameter, methodDeclarationSyntax.Identifier.GetLocation()));
+                Diagnostic.Create(DiagnosticDescriptors.InvalidValueParameter, methodDeclarationSyntax.Identifier.GetLocation(), methodSymbol.Name));
             return null;
         }
 
@@ -325,7 +325,7 @@ public partial class ObfuscatedContentGenerator : IIncrementalGenerator
         if(keyLength <= 0)
         {
             context.ReportDiagnostic(
-                Diagnostic.Create(DiagnosticDescriptors.InvalidKeyLengthParameter, methodDeclarationSyntax.Identifier.GetLocation()));
+                Diagnostic.Create(DiagnosticDescriptors.InvalidKeyLengthParameter, methodDeclarationSyntax.Identifier.GetLocation(), methodSymbol.Name));
             return null;
         }
 
