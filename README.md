@@ -1,5 +1,7 @@
 # CompileTimeObfuscator
 
+[![NuGet](https://img.shields.io/nuget/v/CompileTimeObfuscator?style=flat-square)](https://www.nuget.org/packages/CompileTimeObfuscator)
+
 A C# [Source Generator](https://github.com/dotnet/roslyn/blob/main/docs/features/incremental-generators.md) for obfuscating string or byte array values using multi-byte xor encryption.
 
 Sample code:
@@ -46,11 +48,18 @@ internal static partial class Program
 The result of executing the sample code, and the result of `strings` command indicating that the obfuscation result is not included in a binary:
 ![](doc/SampleOutputAndStringsCommandResult.png)
 
+## Prerequirement
+
+- Visual Studio 2022 Version 17.3 or higher
+- C# 9 or higher
+- .NET Standard 2.1 or higher
+
+I tested the generator using Visual Studio 2022 Version 17.5.1 and a project using C# 11 and .NET 6.
+
 ## Usage
 
-1. Download a source code from this repository.
-2. Add project reference to `CompileTimeObfuscator/CompileTimeObfuscator.csproj` in your project settings.
-3. Use `CompileTimeObfuscator.ObfuscatedString` and `CompileTimeObfuscator.ObfuscatedBytes` in your source.
+1. Add a nuget packege [CompileTimeObfuscator](https://www.nuget.org/packages/CompileTimeObfuscator).
+2. Use `CompileTimeObfuscator.ObfuscatedString` and `CompileTimeObfuscator.ObfuscatedBytes` in your source.
   - `CompileTimeObfuscator.ObfuscatedString` can obfuscate a string. The return type of the method can be a `string` or `System.Buffers.IMemoryOwner<char>`.
   - `CompileTimeObfuscator.ObfuscatedString` can obfuscate a byte array. The return type of the method can be a `byte[]` or `System.Buffers.IMemoryOwner<byte>`.
   - For both attribute cases, I recommend using the `IMemoryOwner<T>` version if execution efficiency is a priority. `string` or `byte[]` versions are wrappers on `IMemoryOwner<T>` version with additional conversion.
