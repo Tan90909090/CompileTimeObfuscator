@@ -35,81 +35,82 @@ public partial class CompileTimeObfuscatorGenerator : IIncrementalGenerator
         using System.Buffers;
         using System.Diagnostics;
 
-        namespace {{NameSpaceName}};
-
-        /// <summary>Obfuscate the specified string to preventing the string from appearing in a metadata. The obfuscated string is deobfuscated at runtime. The method must return <see cref="string"/> or <see cref="IMemoryOwner{T}"/> of type <see cref="char"/>.</summary>
-        [Conditional("COMPILE_TIME_ONLY")]
-        [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
-        internal sealed class {{ClassNameObfuscatedStringAttribution}}: Attribute
+        namespace {{NameSpaceName}}
         {
-            /// <summary>Initializes a new instance of the <see cref="{{ClassNameObfuscatedStringAttribution}}"/> with the specified string.</summary>
-            /// <param name="value">The string to obfuscate.</param>
-            internal {{ClassNameObfuscatedStringAttribution}}(string value)
+            /// <summary>Obfuscate the specified string to preventing the string from appearing in a metadata. The obfuscated string is deobfuscated at runtime. The method must return <see cref="string"/> or <see cref="IMemoryOwner{T}"/> of type <see cref="char"/>.</summary>
+            [Conditional("COMPILE_TIME_ONLY")]
+            [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+            internal sealed class {{ClassNameObfuscatedStringAttribution}}: Attribute
             {
-            }
-
-            /// <summary>Indicates the key length to obfuscate. A default value is {{DefaultValueKeyLength}}.</summary>
-            public int {{PropertyNameKeyLength}} = {{DefaultValueKeyLength}};
-
-            /// <summary>Indicates whether a deobfuscated buffer will cleared after disposing an <see cref="IMemoryOwner{T}"/> object. A default value is {{DefaultValueClearBufferWhenDispose}}.</summary>
-            public bool {{PropertyNameClearBufferWhenDispose}} = {{DefaultValueClearBufferWhenDispose}};
-        }
-
-        /// <summary>Obfuscate the specified bytes to preventing the bytes from appearing in a metadata. The obfuscated bytes is deobfuscated at runtime. The method must return <see cref="byte"/>[] or <see cref="IMemoryOwner{T}"/> of type <see cref="byte"/>.</summary>
-        [Conditional("COMPILE_TIME_ONLY")]
-        [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
-        internal sealed class {{ClassNameObfuscatedBytesAttribution}}: Attribute
-        {
-            /// <summary>Initializes a new instance of the <see cref="{{ClassNameObfuscatedBytesAttribution}}"/> with the specified bytes.</summary>
-            /// <param name="value">The bytes to obfuscate.</param>
-            internal {{ClassNameObfuscatedBytesAttribution}}(byte[] value)
-            {
-            }
-
-            /// <summary>Indicates the key length to obfuscate. A default value is {{DefaultValueKeyLength}}.</summary>
-            public int {{PropertyNameKeyLength}} = {{DefaultValueKeyLength}};
-
-            /// <summary>Indicates whether a deobfuscated buffer will cleared after disposing an <see cref="IMemoryOwner{T}"/> object. A default value is {{DefaultValueClearBufferWhenDispose}}.</summary>
-            public bool {{PropertyNameClearBufferWhenDispose}} = {{DefaultValueClearBufferWhenDispose}};
-        }
-
-        internal sealed class {{ClassNameClearableBuffer}}<T> : IMemoryOwner<T>
-        {
-            private T[]? _array;
-            private readonly int _length;
-            private readonly bool _clearBufferWhenDispose;
-
-            internal {{ClassNameClearableBuffer}}(int length, bool clearBufferWhenDispose)
-            {
-                _array = ArrayPool<T>.Shared.Rent(length);
-                _length = length;
-                _clearBufferWhenDispose = clearBufferWhenDispose;
-            }
-
-            public void Dispose()
-            {
-                if (_array is null) { return; }
-
-                // Even if clearArray parameter of ArrayPool<T>.Shared.Return is set to true,
-                // the array will not be cleared if the array is not returned to the pool.
-                // Therefore, clear the array manually here.
-                if (_clearBufferWhenDispose)
+                /// <summary>Initializes a new instance of the <see cref="{{ClassNameObfuscatedStringAttribution}}"/> with the specified string.</summary>
+                /// <param name="value">The string to obfuscate.</param>
+                internal {{ClassNameObfuscatedStringAttribution}}(string value)
                 {
-                    _array.AsSpan().Fill(default!);
                 }
 
-                ArrayPool<T>.Shared.Return(_array);
-                _array = null;
+                /// <summary>Indicates the key length to obfuscate. A default value is {{DefaultValueKeyLength}}.</summary>
+                public int {{PropertyNameKeyLength}} = {{DefaultValueKeyLength}};
+
+                /// <summary>Indicates whether a deobfuscated buffer will cleared after disposing an <see cref="IMemoryOwner{T}"/> object. A default value is {{DefaultValueClearBufferWhenDispose}}.</summary>
+                public bool {{PropertyNameClearBufferWhenDispose}} = {{DefaultValueClearBufferWhenDispose}};
             }
 
-            /// <summary>Returns <see cref="Memory{T}"/> that length is the originally required length. This behavior is different from an <see cref="IMemoryOwner{T}"/> returned from <see cref="MemoryPool{T}.Shared"/>.</summary>
-            public Memory<T> Memory
+            /// <summary>Obfuscate the specified bytes to preventing the bytes from appearing in a metadata. The obfuscated bytes is deobfuscated at runtime. The method must return <see cref="byte"/>[] or <see cref="IMemoryOwner{T}"/> of type <see cref="byte"/>.</summary>
+            [Conditional("COMPILE_TIME_ONLY")]
+            [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+            internal sealed class {{ClassNameObfuscatedBytesAttribution}}: Attribute
             {
-                get
+                /// <summary>Initializes a new instance of the <see cref="{{ClassNameObfuscatedBytesAttribution}}"/> with the specified bytes.</summary>
+                /// <param name="value">The bytes to obfuscate.</param>
+                internal {{ClassNameObfuscatedBytesAttribution}}(byte[] value)
                 {
-                    if (_array is null) { throw new ObjectDisposedException(GetType().FullName); }
+                }
 
-                    return new Memory<T>(_array, 0, _length);
+                /// <summary>Indicates the key length to obfuscate. A default value is {{DefaultValueKeyLength}}.</summary>
+                public int {{PropertyNameKeyLength}} = {{DefaultValueKeyLength}};
+
+                /// <summary>Indicates whether a deobfuscated buffer will cleared after disposing an <see cref="IMemoryOwner{T}"/> object. A default value is {{DefaultValueClearBufferWhenDispose}}.</summary>
+                public bool {{PropertyNameClearBufferWhenDispose}} = {{DefaultValueClearBufferWhenDispose}};
+            }
+
+            internal sealed class {{ClassNameClearableBuffer}}<T> : IMemoryOwner<T>
+            {
+                private T[]? _array;
+                private readonly int _length;
+                private readonly bool _clearBufferWhenDispose;
+
+                internal {{ClassNameClearableBuffer}}(int length, bool clearBufferWhenDispose)
+                {
+                    _array = ArrayPool<T>.Shared.Rent(length);
+                    _length = length;
+                    _clearBufferWhenDispose = clearBufferWhenDispose;
+                }
+
+                public void Dispose()
+                {
+                    if (_array is null) { return; }
+
+                    // Even if clearArray parameter of ArrayPool<T>.Shared.Return is set to true,
+                    // the array will not be cleared if the array is not returned to the pool.
+                    // Therefore, clear the array manually here.
+                    if (_clearBufferWhenDispose)
+                    {
+                        _array.AsSpan().Fill(default!);
+                    }
+
+                    ArrayPool<T>.Shared.Return(_array);
+                    _array = null;
+                }
+
+                /// <summary>Returns <see cref="Memory{T}"/> that length is the originally required length. This behavior is different from an <see cref="IMemoryOwner{T}"/> returned from <see cref="MemoryPool{T}.Shared"/>.</summary>
+                public Memory<T> Memory
+                {
+                    get
+                    {
+                        if (_array is null) { throw new ObjectDisposedException(GetType().FullName); }
+
+                        return new Memory<T>(_array, 0, _length);
+                    }
                 }
             }
         }
