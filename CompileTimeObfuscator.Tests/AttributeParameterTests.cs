@@ -121,7 +121,7 @@ public static partial class AttributeParameterTests
         string source = $$"""
             partial class C
             {
-                [CompileTimeObfuscator.ObfuscatedString("test", ClearBufferWhenDisposing = {{Utils.ToLiteralPresentation(clearBufferWhenDisposing)}})]
+                [CompileTimeObfuscator.ObfuscatedString("test", ClearBufferWhenDispose = {{Utils.ToLiteralPresentation(clearBufferWhenDisposing)}})]
                 private partial string M();
             }
             """;
