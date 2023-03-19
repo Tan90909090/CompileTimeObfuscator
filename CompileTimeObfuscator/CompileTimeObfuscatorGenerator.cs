@@ -90,7 +90,15 @@ public partial class CompileTimeObfuscatorGenerator : IIncrementalGenerator
             {
                 if (_array is null) { return; }
 
-                ArrayPool<T>.Shared.Return(_array, _clearBufferWhenDispose);
+                // Even if clearArray parameter of ArrayPool<T>.Shared.Return is set to true,
+                // the array will not be cleared if the array is not returned to the pool.
+                // Therefore, clear the array manually here.
+                if (_clearBufferWhenDispose)
+                {
+                    _array.AsSpan().Fill(default!);
+                }
+
+                ArrayPool<T>.Shared.Return(_array);
                 _array = null;
             }
 
