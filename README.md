@@ -46,7 +46,7 @@ internal static partial class Program
 ```
 
 The result of executing the sample code, and the result of `strings` command indicating that the obfuscation result is not included in a binary:
-![](doc/SampleOutputAndStringsCommandResult.png)
+![](https://raw.githubusercontent.com/Tan90909090/CompileTimeObfuscator/main/doc/SampleOutputAndStringsCommandResult.png)
 
 ## Prerequirement
 
@@ -54,7 +54,10 @@ The result of executing the sample code, and the result of `strings` command ind
 - C# 9 or higher
 - .NET Standard 2.1 or higher
 
-I tested the generator using Visual Studio 2022 Version 17.5.1 and a project using C# 11 and .NET 6.
+I tested an operation in following environments:
+
+- Visual Studio 2022 Version 17.5.1 and a project using C# 9 and .NET Core 3.1
+- Visual Studio 2022 Version 17.5.1 and a project using C# 11 and .NET 6
 
 ## Usage
 
