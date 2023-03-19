@@ -4,7 +4,7 @@ using System.Text;
 using CompileTimeObfuscator;
 
 namespace Sample;
-internal partial class Program
+internal static partial class Program
 {
     private static string PlainText() => "This is a plain string";
 

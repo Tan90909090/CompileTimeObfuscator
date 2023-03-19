@@ -1,18 +1,26 @@
 ﻿using System;
 using System.Buffers;
+using System.Threading;
 
 namespace CompileTimeObfuscator;
-
-// If I write a code using stackalloc expression such as `ReadOnlySpan<byte> a = stackalloc byte[32]`
-// then process will crash with a message "The target process exited with code -2146233082 (0x80131506) while evaluating the function '<LAST_CALLED_METHOD_NAME>'."
-// I don't know why but I can avoid that using MemoryPool<T>.
+// If I write a code using a stackalloc expression such as `ReadOnlySpan<byte> a = stackalloc byte[32]`
+// then the generator process will crash with a message "The target process exited with code -2146233082 (0x80131506) while evaluating the function '<LAST_CALLED_METHOD_NAME>'."
+// I don't know why but I can avoid that using a MemoryPool<T>.
+/// <summary>Privodes obfuscation functions using an xor encryption.</summary>
 internal static class XorObfuscator
 {
     private const string CommentAboutReadOnlySpanOptimization = "// The compiler optimize a code if `new byte[]{...}` is assigned to ReadOnlySpan<byte>. https://github.com/dotnet/roslyn/pull/24621";
 
-    internal static string GenerateCodeForDeobfuscateString(ReadOnlySpan<char> content, int keyLength, bool clearBufferWhenDisposing, bool convertToString)
+    // I don't know if it is guaranteed that generator is executed in a single thread or not.
+    internal static ThreadLocal<Random> ThreadLocalRandom = new(() => new Random());
+
+    internal static string GenerateMethodBodyCodeForDeobfuscateString(
+        ReadOnlySpan<char> content,
+        int keyLength,
+        bool clearBufferWhenDisposing,
+        bool convertToString)
     {
-        var random = Utils.ThreadLocalRandom.Value;
+        var random = ThreadLocalRandom.Value;
         using var keyBuffer = MemoryPool<byte>.Shared.Rent(keyLength);
         var keySpan = keyBuffer.Memory.Span.Slice(0, keyLength);
         using var obfuscatedBuffer = MemoryPool<byte>.Shared.Rent(content.Length * 2);
@@ -30,6 +38,7 @@ internal static class XorObfuscator
         }
 
         string code = $$"""
+            {
                 {{CommentAboutReadOnlySpanOptimization}}
                 System.ReadOnlySpan<byte> obfuscatedValue = {{Utils.ToByteArrayLiteralPresentation(obfuscatedSpan)}};
                 System.ReadOnlySpan<byte> key = {{Utils.ToByteArrayLiteralPresentation(keySpan)}};
@@ -42,13 +51,18 @@ internal static class XorObfuscator
                     span[i] = (char)(upper << 8 | lower);
                 }
                 return {{(convertToString ? "new string(buffer.Memory.Span)" : "buffer")}};
+            }
         """;
         return code;
     }
 
-    internal static string GenerateCodeForDeobfuscateBytes(ReadOnlySpan<byte> content, int keyLength, bool clearBufferWhenDisposing, bool convertToArray)
+    internal static string GenerateMethodBodyCodeForDeobfuscateBytes(
+        ReadOnlySpan<byte> content,
+        int keyLength,
+        bool clearBufferWhenDisposing,
+        bool convertToArray)
     {
-        var random = Utils.ThreadLocalRandom.Value;
+        var random = ThreadLocalRandom.Value;
         using var keyBuffer = MemoryPool<byte>.Shared.Rent(keyLength);
         var keySpan = keyBuffer.Memory.Span.Slice(0, keyLength);
         using var obfuscatedBuffer = MemoryPool<byte>.Shared.Rent(content.Length);
@@ -65,6 +79,7 @@ internal static class XorObfuscator
         }
 
         string code = $$"""
+            {
                 {{CommentAboutReadOnlySpanOptimization}}
                 System.ReadOnlySpan<byte> obfuscatedValue = {{Utils.ToByteArrayLiteralPresentation(obfuscatedSpan)}};
                 System.ReadOnlySpan<byte> key = {{Utils.ToByteArrayLiteralPresentation(keySpan)}};
@@ -75,6 +90,7 @@ internal static class XorObfuscator
                     span[i] = (byte)(obfuscatedValue[i] ^ key[i % key.Length]);
                 }
                 return {{(convertToArray ? "buffer.Memory.ToArray()" : "buffer")}};
+            }
         """;
         return code;
     }

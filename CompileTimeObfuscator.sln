@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CompileTimeObfuscator.Sampl
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CompileTimeObfuscator", "CompileTimeObfuscator\CompileTimeObfuscator.csproj", "{781459D3-C05E-4416-9F9C-4CC54D16A29C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CompileTimeObfuscator.Tests", "CompileTimeObfuscator.Tests\CompileTimeObfuscator.Tests.csproj", "{49AF24F7-E1C9-4D3B-96D4-5D9E4AEF3651}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{781459D3-C05E-4416-9F9C-4CC54D16A29C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{781459D3-C05E-4416-9F9C-4CC54D16A29C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{781459D3-C05E-4416-9F9C-4CC54D16A29C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{49AF24F7-E1C9-4D3B-96D4-5D9E4AEF3651}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{49AF24F7-E1C9-4D3B-96D4-5D9E4AEF3651}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{49AF24F7-E1C9-4D3B-96D4-5D9E4AEF3651}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{49AF24F7-E1C9-4D3B-96D4-5D9E4AEF3651}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
