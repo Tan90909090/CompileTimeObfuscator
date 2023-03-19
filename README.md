@@ -45,7 +45,7 @@ internal static partial class Program
 }
 ```
 
-The result of executing the sample code, and the result of `strings` command indicating that the obfuscation result is not included in a binary:
+The result of executing the sample code, and the result of `strings` command indicating that the obfuscation target string/bytes is not included in a binary as plain text:
 ![](https://raw.githubusercontent.com/Tan90909090/CompileTimeObfuscator/main/doc/SampleOutputAndStringsCommandResult.png)
 
 ## Prerequirement
