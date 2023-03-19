@@ -9,7 +9,7 @@ namespace CompileTimeObfuscator;
 /// <summary>Privodes obfuscation functions using an xor encryption.</summary>
 internal static class XorObfuscator
 {
-    private const string CommentAboutReadOnlySpanOptimization = "// The compiler optimize a code if `new byte[]{...}` is assigned to ReadOnlySpan<byte>. https://github.com/dotnet/roslyn/pull/24621";
+    private const string CommentAboutReadOnlySpanOptimization = "// The compiler optimize a code if `new byte[]{...}` is converted to ReadOnlySpan<byte>. https://vcsjones.dev/csharp-readonly-span-bytes-static/";
 
     // I don't know if it is guaranteed that generator is executed in a single thread or not.
     internal static ThreadLocal<Random> ThreadLocalRandom = new(() => new Random());
