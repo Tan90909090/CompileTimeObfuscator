@@ -42,7 +42,7 @@ internal static class XorObfuscator
                 {{CommentAboutReadOnlySpanOptimization}}
                 System.ReadOnlySpan<byte> obfuscatedValue = {{Utils.ToByteArrayLiteralPresentation(obfuscatedSpan)}};
                 System.ReadOnlySpan<byte> key = {{Utils.ToByteArrayLiteralPresentation(keySpan)}};
-                {{(convertToString ? "using " : string.Empty)}}var buffer = new {{ObfuscatedContentGenerator.FullyQualifiedClassNameClearableBuffer}}<char>(obfuscatedValue.Length / 2, {{Utils.ToLiteralPresentation(clearBufferWhenDisposing)}});
+                {{(convertToString ? "using " : string.Empty)}}var buffer = new {{CompileTimeObfuscatorGenerator.FullyQualifiedClassNameClearableBuffer}}<char>(obfuscatedValue.Length / 2, {{Utils.ToLiteralPresentation(clearBufferWhenDisposing)}});
                 var span = buffer.Memory.Span;
                 for (int i = span.Length - 1; i >= 0; i--)
                 {
@@ -83,7 +83,7 @@ internal static class XorObfuscator
                 {{CommentAboutReadOnlySpanOptimization}}
                 System.ReadOnlySpan<byte> obfuscatedValue = {{Utils.ToByteArrayLiteralPresentation(obfuscatedSpan)}};
                 System.ReadOnlySpan<byte> key = {{Utils.ToByteArrayLiteralPresentation(keySpan)}};
-                {{(convertToArray ? "using " : string.Empty)}}var buffer = new {{ObfuscatedContentGenerator.FullyQualifiedClassNameClearableBuffer}}<byte>(obfuscatedValue.Length, {{Utils.ToLiteralPresentation(clearBufferWhenDisposing)}});
+                {{(convertToArray ? "using " : string.Empty)}}var buffer = new {{CompileTimeObfuscatorGenerator.FullyQualifiedClassNameClearableBuffer}}<byte>(obfuscatedValue.Length, {{Utils.ToLiteralPresentation(clearBufferWhenDisposing)}});
                 var span = buffer.Memory.Span;
                 for (int i = span.Length - 1; i >= 0; i--)
                 {

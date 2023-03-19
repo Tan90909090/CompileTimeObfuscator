@@ -129,7 +129,7 @@ public static partial class AttributeParameterTests
         Assert.Empty(result.DiagnosticsReportedByGenerator);
 
         string bufferInitializationLine = result.GeneratedSource!.Split("\n")
-            .Single(line => line.Contains(ObfuscatedContentGenerator.FullyQualifiedClassNameClearableBuffer));
+            .Single(line => line.Contains(CompileTimeObfuscatorGenerator.FullyQualifiedClassNameClearableBuffer));
         string value = Regex.Match(bufferInitializationLine, """([\w]*)\);""").Groups[1].Value;
         Assert.Equal(clearBufferWhenDisposing, bool.Parse(value));
     }

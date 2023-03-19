@@ -1,23 +1,23 @@
 ﻿using Microsoft.CodeAnalysis;
 
 namespace CompileTimeObfuscator;
-/// <summary>Privodes a set of <see cref="DiagnosticDescriptor"/> used by <see cref="ObfuscatedContentGenerator"/>.</summary>
+/// <summary>Privodes a set of <see cref="DiagnosticDescriptor"/> used by <see cref="CompileTimeObfuscatorGenerator"/>.</summary>
 public static class DiagnosticDescriptors
 {
     private const string Category = "CompileTimeObfuscator";
 
     public static readonly DiagnosticDescriptor InvalidMethodSignatureForObfuscatedStringAttribute = new(
         id: "CTO0001",
-        title: $"Invalid {ObfuscatedContentGenerator.ClassNameObfuscatedStringAttribution} usage",
-        messageFormat: $$"""{{ObfuscatedContentGenerator.ClassNameObfuscatedStringAttribution}} method '{0}' must be partial, parameterless, non-generic, non-abstract, and return string or System.Buffers.IMemoryOwner<char>.""",
+        title: $"Invalid {CompileTimeObfuscatorGenerator.ClassNameObfuscatedStringAttribution} usage",
+        messageFormat: $$"""{{CompileTimeObfuscatorGenerator.ClassNameObfuscatedStringAttribution}} method '{0}' must be partial, parameterless, non-generic, non-abstract, and return string or System.Buffers.IMemoryOwner<char>.""",
         category: Category,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
     public static readonly DiagnosticDescriptor InvalidMethodSignatureForObfuscatedBytesAttribute = new(
         id: "CTO0002",
-        title: $"Invalid {ObfuscatedContentGenerator.ClassNameObfuscatedBytesAttribution} usage",
-        messageFormat: $$"""{{ObfuscatedContentGenerator.ClassNameObfuscatedBytesAttribution}} method '{0}'must be partial, parameterless, non-generic, non-abstract, and return byte[] or System.Buffers.IMemoryOwner<byte>.""",
+        title: $"Invalid {CompileTimeObfuscatorGenerator.ClassNameObfuscatedBytesAttribution} usage",
+        messageFormat: $$"""{{CompileTimeObfuscatorGenerator.ClassNameObfuscatedBytesAttribution}} method '{0}'must be partial, parameterless, non-generic, non-abstract, and return byte[] or System.Buffers.IMemoryOwner<byte>.""",
         category: Category,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
